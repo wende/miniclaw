@@ -2,6 +2,14 @@
 
 A lightweight gateway server implementing the [OpenClaw Gateway Protocol v3](protocol-spec.md). Connects AI models (Ollama, OpenAI-compatible APIs) to clients over WebSocket and HTTP, with MCP tool-use support.
 
+## Why
+
+MiniClaw exists for two reasons:
+
+1. **Test OpenClaw client apps without the full backend.** MiniClaw implements the complete protocol v3 surface -- handshake, auth, sessions, agent streaming, presence, all 80+ RPC methods -- so you can develop and test OpenClaw clients against a real, running server without spinning up the entire OpenClaw stack. Demo mode works with zero dependencies.
+
+2. **Run a micro agent compatible with OpenClaw tooling.** Point MiniClaw at Ollama or any OpenAI-compatible API and you get a standalone agent that speaks the same protocol as OpenClaw. Existing clients, dashboards, and integrations built for OpenClaw just work.
+
 ## Features
 
 - **WebSocket RPC** -- Full protocol v3 handshake, auth (token/password), presence, sessions, agent runs with streaming events

@@ -1,0 +1,40 @@
+{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "local/qwen3:4b"
+      }
+    }
+  },
+  "models": {
+    "providers": {
+      "local": {
+        "baseUrl": "http://localhost:11434/v1",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "qwen3:4b",
+            "name": "Qwen 3 4B"
+          }
+        ]
+      },
+      "openrouter": {
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "apiKey": "${OPENROUTER_API_KEY}",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "deepseek/deepseek-chat-v3-0324",
+            "name": "DeepSeek V3",
+            "contextWindow": 131072
+          },
+          {
+            "id": "google/gemini-2.5-flash-preview",
+            "name": "Gemini 2.5 Flash",
+            "contextWindow": 1048576
+          }
+        ]
+      }
+    }
+  }
+}

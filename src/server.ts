@@ -1,4 +1,5 @@
 import type { Server, ServerWebSocket } from "bun";
+import { ConversationLogger } from "./conversation-logger.ts";
 import type {
   RequestFrame,
   ResponseFrame,
@@ -133,6 +134,8 @@ export class MiniClawServer {
   currentModel = "demo";
   currentProvider = "miniclaw";
 
+  private logger: ConversationLogger | null = null;
+
   constructor(config: ServerConfig) {
     this.config = {
       port: config.port,
@@ -149,6 +152,10 @@ export class MiniClawServer {
       dedupeMaxKeys: config.dedupeMaxKeys ?? DEFAULT_DEDUPE_MAX,
       dedupeTtlMs: config.dedupeTtlMs ?? DEFAULT_DEDUPE_TTL_MS,
     };
+
+    if (config.logDir) {
+      this.logger = new ConversationLogger(config.logDir);
+    }
 
     // ── Method Registry ─────────────────────────────────────────────────────
     // Methods with real implementations have named handler methods.
@@ -1875,5 +1882,8 @@ export class MiniClawServer {
     // Update session meta
     const meta = this.ensureSessionMeta(sessionKey);
     meta.lastActiveAt = Date.now();
+
+    // Persist to disk if logging is enabled
+    this.logger?.append(sessionKey, entry);
   }
 }

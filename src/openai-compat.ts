@@ -2,7 +2,7 @@ import type { ServerWebSocket } from "bun";
 import type { MiniClawServer, Run, HistoryEntry } from "./server.ts";
 import type { ContentPart } from "./types.ts";
 import type { McpClientManager, OllamaTool } from "./mcp-client.ts";
-import { MOCK_TOOLS, executeMockTool } from "./ollama.ts";
+import { MOCK_TOOLS, executeMockTool, DEFAULT_SYSTEM_PROMPT } from "./ollama.ts";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -10,6 +10,7 @@ export interface OpenAICompatConfig {
   baseUrl: string; // e.g. "http://localhost:11434/v1"
   apiKey?: string;
   model: string;
+  systemPrompt?: string;
 }
 
 // ── Message Types ───────────────────────────────────────────────────────────
@@ -218,8 +219,7 @@ export function createOpenAICompatHandler(
     const messages: OpenAIMessage[] = [
       {
         role: "system",
-        content:
-          "You are a helpful AI assistant. You can use tools when needed. Be concise and helpful.",
+        content: config.systemPrompt ?? DEFAULT_SYSTEM_PROMPT,
       },
       ...historyToOpenAIMessages(history),
     ];

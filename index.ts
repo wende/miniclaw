@@ -101,7 +101,7 @@ async function setupProvider() {
 
     server.onAgentRun = createOllamaHandler(
       server,
-      { baseUrl: ollamaBaseUrl, model: ollamaModel },
+      { baseUrl: ollamaBaseUrl, model: ollamaModel, systemPrompt: earlyConfig?.agents?.defaults?.systemPrompt },
       mcpManager
     );
     server.currentModel = ollamaModel;
@@ -135,6 +135,7 @@ async function setupProvider() {
       baseUrl: resolved.provider.baseUrl,
       apiKey: resolved.provider.apiKey,
       model: resolved.modelId,
+      systemPrompt: openclawConfig?.agents?.defaults?.systemPrompt,
     },
     mcpManager
   );

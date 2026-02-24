@@ -8,7 +8,12 @@ import type { McpClientManager, OllamaTool } from "./mcp-client.ts";
 export interface OllamaConfig {
   baseUrl: string;
   model: string;
+  reasoning?: boolean;
+  systemPrompt?: string;
 }
+
+export const DEFAULT_SYSTEM_PROMPT =
+  "You are a helpful AI assistant. You can use tools when needed. Be concise and helpful.";
 
 const DEFAULT_CONFIG: OllamaConfig = {
   baseUrl: "http://localhost:11434",
@@ -141,6 +146,9 @@ async function ollamaChat(
     messages,
     stream: true,
   };
+  if (config.reasoning) {
+    body["think"] = true;
+  }
   if (tools && tools.length > 0) {
     body["tools"] = tools;
   }
@@ -252,8 +260,7 @@ export function createOllamaHandler(
     const messages: OllamaMessage[] = [
       {
         role: "system",
-        content:
-          "You are a helpful AI assistant. You can use tools when needed. Be concise and helpful.",
+        content: cfg.systemPrompt ?? DEFAULT_SYSTEM_PROMPT,
       },
       ...historyToOllamaMessages(history),
     ];

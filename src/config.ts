@@ -67,6 +67,7 @@ export interface OpenClawConfig {
       model?: {
         primary?: string; // "provider/model-id"
       };
+      systemPrompt?: string;
     };
   };
   models?: {

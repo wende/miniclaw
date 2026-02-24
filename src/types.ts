@@ -668,6 +668,8 @@ export interface ServerConfig {
   handshakeTimeoutMs?: number;
   dedupeMaxKeys?: number;
   dedupeTtlMs?: number;
+  /** Directory to write conversation JSONL logs. Omit to disable disk logging. */
+  logDir?: string;
 }
 
 // ── Scopes & Roles (§3.3, §3.4) ────────────────────────────────────────────

@@ -82,6 +82,13 @@ async function loadMcpManager(): Promise<McpClientManager | undefined> {
 
 async function setupProvider() {
   mcpManager = await loadMcpManager();
+  if (mcpManager) {
+    server.getTools = () =>
+      mcpManager!.getOllamaTools().map((t) => ({
+        name: t.function.name,
+        description: t.function.description,
+      }));
+  }
 
   // 1. Explicit --ollama flag: use Ollama native API
   if (useOllama) {

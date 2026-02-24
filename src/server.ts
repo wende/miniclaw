@@ -131,6 +131,9 @@ export class MiniClawServer {
   // Allow external agent handler injection
   onAgentRun?: (run: Run, ws: ServerWebSocket<unknown> | null) => Promise<void>;
 
+  // Returns the list of tools available to the agent (set by provider setup)
+  getTools?: () => { name: string; description: string }[];
+
   // Current model name (set by Ollama handler or default)
   currentModel = "demo";
   currentProvider = "miniclaw";
@@ -1417,6 +1420,21 @@ export class MiniClawServer {
       };
     }
 
+    if (lower === "/tools") {
+      if (!this.getTools) {
+        return { text: "No tools available." };
+      }
+      const tools = this.getTools();
+      if (tools.length === 0) {
+        return { text: "No tools available." };
+      }
+      const lines = ["Available tools:", ""];
+      for (const tool of tools) {
+        lines.push(`  **${tool.name}** — ${tool.description}`);
+      }
+      return { text: lines.join("\n") };
+    }
+
     if (lower === "/help") {
       return {
         text: [
@@ -1425,6 +1443,7 @@ export class MiniClawServer {
           "  /model   — Show current model",
           "  /model <name> — Switch model",
           "  /models  — List available models",
+          "  /tools   — List available tools",
           "  /help    — Show this help",
         ].join("\n"),
       };

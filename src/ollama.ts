@@ -219,6 +219,7 @@ function historyToOllamaMessages(history: HistoryEntry[]): OllamaMessage[] {
   const messages: OllamaMessage[] = [];
 
   for (const entry of history) {
+    if (entry.stopReason === "greeting") continue;
     if (entry.role === "user") {
       const text = entry.content
         .filter((p) => p.type === "text" && p.text)

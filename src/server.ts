@@ -110,7 +110,6 @@ export class MiniClawServer {
   private health: Record<string, unknown> = {};
   private runs = new Map<string, Run>();
   private chatHistory = new Map<string, HistoryEntry[]>();
-  private greetedSessions = new Set<string>(); // sessions that have already received the greeting
   private idempotencyKeys = new Map<string, number>(); // key → timestamp (§2.8)
   private tickInterval: ReturnType<typeof setInterval> | null = null;
   private healthInterval: ReturnType<typeof setInterval> | null = null;
@@ -671,7 +670,6 @@ export class MiniClawServer {
   clearSession(sessionKey: string): void {
     this.chatHistory.delete(sessionKey);
     this.sessionMeta.delete(sessionKey);
-    this.greetedSessions.delete(sessionKey);
   }
 
   // ── Connection Lifecycle ──────────────────────────────────────────────────
@@ -1048,9 +1046,10 @@ export class MiniClawServer {
       messages,
     });
 
-    // Emit a UI-only greeting to this client — never stored in history so the LLM never sees it
-    if (this.config.greeting && !this.greetedSessions.has(p.sessionKey)) {
-      this.greetedSessions.add(p.sessionKey);
+    // Emit greeting on first visit; stored with stopReason:"greeting" so chat.history returns it
+    // for mobileclaw to render, but the LLM never sees it (filtered in history converters).
+    if (this.config.greeting && history.length === 0) {
+      const ts = Date.now();
       const greetingRunId = `greeting-${p.sessionKey}`;
       ws.send(JSON.stringify({
         type: "event", event: "chat",
@@ -1060,7 +1059,7 @@ export class MiniClawServer {
           message: {
             role: "assistant",
             content: [{ type: "text", text: this.config.greeting }],
-            timestamp: Date.now(),
+            timestamp: ts,
           },
         },
       }));
@@ -1071,6 +1070,12 @@ export class MiniClawServer {
           state: "final",
         },
       }));
+      this.appendHistory(p.sessionKey, {
+        role: "assistant",
+        content: [{ type: "text", text: this.config.greeting }],
+        timestamp: ts,
+        stopReason: "greeting",
+      });
     }
   }
 
@@ -1245,7 +1250,6 @@ export class MiniClawServer {
     const p = params as unknown as SessionsResetParams;
     const sessionKey = p.key ?? (params["sessionKey"] as string) ?? "main";
     this.chatHistory.delete(sessionKey);
-    this.greetedSessions.delete(sessionKey);
     this.sendResponse(ws, id, { sessionKey, reset: true });
   }
 
@@ -1263,7 +1267,6 @@ export class MiniClawServer {
 
     this.chatHistory.delete(p.key);
     this.sessionMeta.delete(p.key);
-    this.greetedSessions.delete(p.key);
     this.sendResponse(ws, id, { key: p.key, deleted: true });
   }
 
@@ -1378,7 +1381,6 @@ export class MiniClawServer {
   ): { text: string; stopReason?: string; model?: string; provider?: string } | null {
     if (lower === "/new") {
       this.chatHistory.delete(run.sessionKey);
-      this.greetedSessions.delete(run.sessionKey);
       return { text: "Session cleared. How can I help you?" };
     }
 

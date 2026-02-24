@@ -5,7 +5,7 @@ import {
   ensureModel,
 } from "./src/ollama.ts";
 import { createOpenAICompatHandler } from "./src/openai-compat.ts";
-import { loadOpenClawConfig, resolveModel } from "./src/config.ts";
+import { loadOpenClawConfig, resolveModel, resolveBindAddress, resolveEnvVars } from "./src/config.ts";
 import { McpClientManager, type McpConfig } from "./src/mcp-client.ts";
 import { existsSync } from "fs";
 import { resolve } from "path";
@@ -13,12 +13,19 @@ import { resolve } from "path";
 const useOllama = process.argv.includes("--ollama");
 const useMcp = process.argv.includes("--mcp");
 const modelArg = process.argv.find((_, i, a) => a[i - 1] === "--model");
+const configArg = process.argv.find((_, i, a) => a[i - 1] === "--config");
 const ollamaModel = process.env["OLLAMA_MODEL"] ?? "qwen3:4b";
 const ollamaBaseUrl = process.env["OLLAMA_BASE_URL"] ?? "http://localhost:11434";
 
+// Load config early so gateway settings and env vars apply before server creation
+const earlyConfig = await loadOpenClawConfig(import.meta.dir, configArg);
+const gwConfig = earlyConfig?.gateway;
+
 const server = new MiniClawServer({
-  port: 8080,
-  hostname: "0.0.0.0",
+  port: gwConfig?.port ?? 8080,
+  hostname: resolveBindAddress(gwConfig?.bind),
+  authToken: gwConfig?.auth?.token ? resolveEnvVars(gwConfig.auth.token) : undefined,
+  authPassword: gwConfig?.auth?.password ? resolveEnvVars(gwConfig.auth.password) : undefined,
 });
 
 let mcpManager: McpClientManager | undefined;
@@ -83,8 +90,8 @@ async function setupProvider() {
     return;
   }
 
-  // 2. Try openclaw.json for provider config
-  const openclawConfig = await loadOpenClawConfig(import.meta.dir);
+  // 2. Try openclaw.json for provider config (reuse already-loaded config)
+  const openclawConfig = earlyConfig;
   if (!openclawConfig) return; // No config found — stay in demo mode
 
   const resolved = resolveModel(openclawConfig, modelArg);

@@ -1051,21 +1051,26 @@ export class MiniClawServer {
     // Emit a UI-only greeting to this client — never stored in history so the LLM never sees it
     if (this.config.greeting && !this.greetedSessions.has(p.sessionKey)) {
       this.greetedSessions.add(p.sessionKey);
-      const event: EventFrame = {
-        type: "event",
-        event: "chat",
+      const greetingRunId = `greeting-${p.sessionKey}`;
+      ws.send(JSON.stringify({
+        type: "event", event: "chat",
         payload: {
-          sessionKey: p.sessionKey,
-          seq: 0,
-          state: "final",
+          runId: greetingRunId, sessionKey: p.sessionKey, seq: 0,
+          state: "delta",
           message: {
             role: "assistant",
             content: [{ type: "text", text: this.config.greeting }],
             timestamp: Date.now(),
           },
         },
-      };
-      ws.send(JSON.stringify(event));
+      }));
+      ws.send(JSON.stringify({
+        type: "event", event: "chat",
+        payload: {
+          runId: greetingRunId, sessionKey: p.sessionKey, seq: 1,
+          state: "final",
+        },
+      }));
     }
   }
 

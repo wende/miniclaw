@@ -11,9 +11,15 @@ import { existsSync } from "fs";
 import { resolve } from "path";
 
 const useOllama = process.argv.includes("--ollama");
-const useMcp = process.argv.includes("--mcp");
 const modelArg = process.argv.find((_, i, a) => a[i - 1] === "--model");
 const configArg = process.argv.find((_, i, a) => a[i - 1] === "--config");
+
+// --mcp [path]  — path is optional; falls back to mcp.json in script dir
+const mcpFlagIdx = process.argv.indexOf("--mcp");
+const mcpArg = mcpFlagIdx !== -1
+  ? (process.argv[mcpFlagIdx + 1]?.startsWith("--") ? undefined : process.argv[mcpFlagIdx + 1])
+  : undefined;
+const useMcp = mcpFlagIdx !== -1;
 const ollamaModel = process.env["OLLAMA_MODEL"] ?? "qwen3:4b";
 const ollamaBaseUrl = process.env["OLLAMA_BASE_URL"] ?? "http://localhost:11434";
 
@@ -33,25 +39,39 @@ let mcpManager: McpClientManager | undefined;
 // ── Load MCP tools (shared between --ollama and openclaw.json modes) ────────
 
 async function loadMcpManager(): Promise<McpClientManager | undefined> {
-  if (!useMcp) return undefined;
+  // Collect servers from openclaw.json mcp.servers section
+  const configServers = earlyConfig?.mcp?.servers ?? {};
 
-  const mcpConfigPath = resolve(import.meta.dir, "mcp.json");
-  if (!existsSync(mcpConfigPath)) {
-    console.warn("--mcp specified but mcp.json not found. Continuing without MCP tools.");
-    return undefined;
+  // Collect servers from standalone mcp.json (--mcp flag)
+  let fileServers: McpConfig["mcpServers"] = {};
+  if (useMcp) {
+    const mcpConfigPath = mcpArg ? resolve(mcpArg) : resolve(import.meta.dir, "mcp.json");
+    if (!existsSync(mcpConfigPath)) {
+      console.warn(`--mcp specified but ${mcpConfigPath} not found. Continuing without MCP tools.`);
+    } else {
+      try {
+        const raw = await Bun.file(mcpConfigPath).text();
+        const parsed = JSON.parse(raw) as McpConfig;
+        fileServers = parsed.mcpServers;
+      } catch (err) {
+        console.warn("Failed to load mcp.json:", err);
+      }
+    }
   }
 
+  // Merge: openclaw.json takes precedence over mcp.json for same-named servers
+  const merged = { ...fileServers, ...configServers };
+  if (Object.keys(merged).length === 0) return undefined;
+
   try {
-    const raw = await Bun.file(mcpConfigPath).text();
-    const config: McpConfig = JSON.parse(raw);
-    const manager = new McpClientManager(config);
+    const manager = new McpClientManager({ mcpServers: merged });
     await manager.connect();
     console.log(
       `MCP: ${manager.connectedServerCount} server(s), ${manager.totalToolCount} tool(s)`
     );
     return manager;
   } catch (err) {
-    console.warn("Failed to load mcp.json:", err);
+    console.warn("Failed to initialize MCP manager:", err);
     return undefined;
   }
 }

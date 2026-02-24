@@ -44,11 +44,24 @@ export interface EnvConfig {
   [key: string]: unknown;
 }
 
+// ── MCP Config (§mcp) ───────────────────────────────────────────────────────
+
+export interface McpServerConfig {
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
+}
+
+export interface McpSectionConfig {
+  servers: Record<string, McpServerConfig>;
+}
+
 // ── Full Config ──────────────────────────────────────────────────────────────
 
 export interface OpenClawConfig {
   gateway?: GatewayConfig;
   env?: EnvConfig;
+  mcp?: McpSectionConfig;
   agents?: {
     defaults?: {
       model?: {

@@ -5,6 +5,7 @@ import {
   ensureModel,
 } from "./src/ollama.ts";
 import { createOpenAICompatHandler } from "./src/openai-compat.ts";
+import { createGeminiHandler } from "./src/gemini.ts";
 import { loadOpenClawConfig, resolveModel, resolveBindAddress, resolveEnvVars } from "./src/config.ts";
 import { McpClientManager, type McpConfig } from "./src/mcp-client.ts";
 import { existsSync } from "fs";
@@ -120,6 +121,25 @@ async function setupProvider() {
     if (modelArg) {
       console.warn(`WARNING: Could not resolve model "${modelArg}" from openclaw.json.`);
     }
+    return;
+  }
+
+  if (resolved.provider.api === "gemini-native") {
+    server.onAgentRun = createGeminiHandler(
+      server,
+      {
+        apiKey: resolved.provider.apiKey ?? "",
+        model: resolved.modelId,
+        systemPrompt: openclawConfig?.agents?.defaults?.systemPrompt,
+        reasoning: resolved.modelEntry?.reasoning,
+      },
+      mcpManager
+    );
+    server.currentModel = `${resolved.providerName}/${resolved.modelId}`;
+    server.currentProvider = resolved.providerName;
+    console.log(
+      `Gemini native mode: ${resolved.displayName} (reasoning: ${!!resolved.modelEntry?.reasoning})`
+    );
     return;
   }
 

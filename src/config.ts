@@ -16,7 +16,7 @@ export interface ModelEntry {
 export interface ProviderConfig {
   baseUrl: string;
   apiKey?: string;
-  api: "openai-completions" | "anthropic-messages";
+  api: "openai-completions" | "anthropic-messages" | "gemini-native";
   models: ModelEntry[];
 }
 

@@ -88,6 +88,7 @@ interface ResolvedConfig {
   handshakeTimeoutMs: number;
   dedupeMaxKeys: number;
   dedupeTtlMs: number;
+  greeting?: string;
 }
 
 // ── Method Handler ───────────────────────────────────────────────────────────
@@ -151,6 +152,7 @@ export class MiniClawServer {
         config.handshakeTimeoutMs ?? DEFAULT_HANDSHAKE_TIMEOUT_MS,
       dedupeMaxKeys: config.dedupeMaxKeys ?? DEFAULT_DEDUPE_MAX,
       dedupeTtlMs: config.dedupeTtlMs ?? DEFAULT_DEDUPE_TTL_MS,
+      greeting: config.greeting,
     };
 
     if (config.logDir) {
@@ -1043,6 +1045,25 @@ export class MiniClawServer {
       sessionKey: p.sessionKey,
       messages,
     });
+
+    // Emit a synthetic greeting to this client when the session is empty
+    if (history.length === 0 && this.config.greeting) {
+      const event: EventFrame = {
+        type: "event",
+        event: "chat",
+        payload: {
+          sessionKey: p.sessionKey,
+          seq: 0,
+          state: "final",
+          message: {
+            role: "assistant",
+            content: [{ type: "text", text: this.config.greeting }],
+            timestamp: Date.now(),
+          },
+        },
+      };
+      ws.send(JSON.stringify(event));
+    }
   }
 
   private handleChatInject(

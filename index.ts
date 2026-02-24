@@ -32,6 +32,7 @@ const server = new MiniClawServer({
   hostname: resolveBindAddress(gwConfig?.bind),
   authToken: gwConfig?.auth?.token ? resolveEnvVars(gwConfig.auth.token) : undefined,
   authPassword: gwConfig?.auth?.password ? resolveEnvVars(gwConfig.auth.password) : undefined,
+  greeting: earlyConfig?.agents?.defaults?.greeting,
 });
 
 let mcpManager: McpClientManager | undefined;

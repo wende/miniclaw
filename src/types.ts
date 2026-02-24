@@ -670,6 +670,8 @@ export interface ServerConfig {
   dedupeTtlMs?: number;
   /** Directory to write conversation JSONL logs. Omit to disable disk logging. */
   logDir?: string;
+  /** Greeting text emitted as a synthetic assistant message when chat.history is called on an empty session. */
+  greeting?: string;
 }
 
 // ── Scopes & Roles (§3.3, §3.4) ────────────────────────────────────────────

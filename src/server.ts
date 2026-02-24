@@ -112,6 +112,7 @@ export class MiniClawServer {
   private health: Record<string, unknown> = {};
   private runs = new Map<string, Run>();
   private chatHistory = new Map<string, HistoryEntry[]>();
+  private greetedSessions = new Set<string>();
   private idempotencyKeys = new Map<string, number>(); // key → timestamp (§2.8)
   private tickInterval: ReturnType<typeof setInterval> | null = null;
   private healthInterval: ReturnType<typeof setInterval> | null = null;
@@ -1052,9 +1053,10 @@ export class MiniClawServer {
       messages,
     });
 
-    // Emit greeting on first visit; stored with stopReason:"greeting" so chat.history returns it
-    // for mobileclaw to render, but the LLM never sees it (filtered in history converters).
-    if (this.config.greeting && history.length === 0) {
+    // Emit greeting on first visit; tracked via greetedSessions so it fires exactly once
+    // even when noHistory is true. Stored with stopReason:"greeting" so the LLM never sees it.
+    if (this.config.greeting && !this.greetedSessions.has(p.sessionKey)) {
+      this.greetedSessions.add(p.sessionKey);
       const ts = Date.now();
       const greetingRunId = `greeting-${p.sessionKey}`;
       ws.send(JSON.stringify({

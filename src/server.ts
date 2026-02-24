@@ -1067,6 +1067,7 @@ export class MiniClawServer {
         role: "assistant",
         content: [{ type: "text", text: this.config.greeting }],
         timestamp: Date.now(),
+        stopReason: "end_turn",
       });
     }
   }

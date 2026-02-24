@@ -904,6 +904,52 @@ describe("stub methods", () => {
 
 // ── New Real Implementations ────────────────────────────────────────────────
 
+describe("noHistory", () => {
+  test("chat.history returns empty after chat.send with noHistory enabled", async () => {
+    const srv = createServer({ noHistory: true });
+    const ws = connect(srv);
+    await handshake(ws);
+
+    sendReq(ws, "r1", "chat.send", {
+      sessionKey: "main",
+      message: "hello",
+      idempotencyKey: "nohistory-1",
+    });
+    await collectUntil(
+      ws,
+      (m) =>
+        m.type === "event" &&
+        m.event === "chat" &&
+        (m.payload as any).state === "final"
+    );
+
+    sendReq(ws, "r2", "chat.history", { sessionKey: "main" });
+    const histRes = await waitForMessage(ws);
+    expect(histRes.ok).toBe(true);
+    expect((histRes.payload as any).messages.length).toBe(0);
+
+    ws.close();
+  });
+
+  test("chat.inject does not store with noHistory enabled", async () => {
+    const srv = createServer({ noHistory: true });
+    const ws = connect(srv);
+    await handshake(ws);
+
+    sendReq(ws, "r1", "chat.inject", {
+      sessionKey: "main",
+      message: "injected",
+    });
+    await waitForMessage(ws);
+
+    sendReq(ws, "r2", "chat.history", { sessionKey: "main" });
+    const histRes = await waitForMessage(ws);
+    expect((histRes.payload as any).messages.length).toBe(0);
+
+    ws.close();
+  });
+});
+
 describe("chat.inject", () => {
   test("injects a message into session history", async () => {
     const srv = createServer();

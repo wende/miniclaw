@@ -69,6 +69,7 @@ export interface OpenClawConfig {
       };
       systemPrompt?: string;
       greeting?: string;
+      noHistory?: boolean;
     };
   };
   models?: {

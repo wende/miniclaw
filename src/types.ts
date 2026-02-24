@@ -672,6 +672,8 @@ export interface ServerConfig {
   logDir?: string;
   /** Greeting text emitted as a synthetic assistant message when chat.history is called on an empty session. */
   greeting?: string;
+  /** When true, no chat history is stored in memory or on disk. */
+  noHistory?: boolean;
 }
 
 // ── Scopes & Roles (§3.3, §3.4) ────────────────────────────────────────────

@@ -61,6 +61,7 @@ export interface Run {
   accumulatedThinking: string;
   abortController: AbortController;
   waitResolvers: Array<(result: Record<string, unknown>) => void>;
+  stopReason?: string;
 }
 
 // ── Chat History Entry ───────────────────────────────────────────────────────
@@ -89,6 +90,7 @@ interface ResolvedConfig {
   dedupeMaxKeys: number;
   dedupeTtlMs: number;
   greeting?: string;
+  noHistory: boolean;
 }
 
 // ── Method Handler ───────────────────────────────────────────────────────────
@@ -156,6 +158,7 @@ export class MiniClawServer {
       dedupeMaxKeys: config.dedupeMaxKeys ?? DEFAULT_DEDUPE_MAX,
       dedupeTtlMs: config.dedupeTtlMs ?? DEFAULT_DEDUPE_TTL_MS,
       greeting: config.greeting,
+      noHistory: config.noHistory ?? false,
     };
 
     if (config.logDir) {
@@ -1482,15 +1485,8 @@ export class MiniClawServer {
       if (result) {
         this.emitAgentEvent(run, "lifecycle", { phase: "start", startedAt: Date.now() });
         run.accumulatedText = result.text;
+        run.stopReason = "slash";
         this.emitChatEvent(run, "delta", result.text);
-        this.appendHistory(run.sessionKey, {
-          role: "assistant",
-          content: [{ type: "text", text: result.text }],
-          timestamp: Date.now(),
-          stopReason: result.stopReason ?? "stop",
-          model: result.model ?? this.currentModel,
-          provider: result.provider ?? this.currentProvider,
-        });
         this.finishRun(run, "completed", undefined, [{ type: "text", text: result.text }]);
         return;
       }
@@ -1683,11 +1679,18 @@ export class MiniClawServer {
         content.push({ type: "thinking", thinking: run.accumulatedThinking });
       }
       content.push({ type: "text", text: textOrError });
-      payload["message"] = {
+      const msgPayload: Record<string, unknown> = {
         role: "assistant",
         content,
         timestamp: Date.now(),
       };
+      if (run.stopReason === "slash") {
+        msgPayload["model"] = "gateway-injected";
+      }
+      payload["message"] = msgPayload;
+      if (state === "final" && run.stopReason) {
+        payload["stopReason"] = run.stopReason;
+      }
     }
 
     const event: EventFrame = {
@@ -1745,7 +1748,8 @@ export class MiniClawServer {
         role: "assistant",
         content: contentParts,
         timestamp: Date.now(),
-        stopReason: "end_turn",
+        stopReason: run.stopReason ?? "end_turn",
+        model: run.stopReason === "slash" ? "gateway-injected" : undefined,
       });
     } else {
       this.emitAgentEvent(run, "lifecycle", {
@@ -1925,6 +1929,7 @@ export class MiniClawServer {
   }
 
   private appendHistory(sessionKey: string, entry: HistoryEntry) {
+    if (this.config.noHistory) return;
     let history = this.chatHistory.get(sessionKey);
     if (!history) {
       history = [];

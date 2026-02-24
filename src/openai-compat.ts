@@ -214,13 +214,21 @@ export function createOpenAICompatHandler(
 
     // Build messages from chat history
     const history = server.getChatHistory(run.sessionKey);
+    const historyMessages = historyToOpenAIMessages(history);
     const messages: OpenAIMessage[] = [
       {
         role: "system",
         content: config.systemPrompt ?? DEFAULT_SYSTEM_PROMPT,
       },
-      ...historyToOpenAIMessages(history),
+      ...historyMessages,
     ];
+
+    // When noHistory is enabled, appendHistory is a no-op so the current
+    // user message never makes it into history. Ensure it is always present.
+    const lastMsg = messages[messages.length - 1];
+    if (!lastMsg || lastMsg.role !== "user" || lastMsg.content !== run.message) {
+      messages.push({ role: "user", content: run.message });
+    }
 
     // Emit lifecycle start
     server.emitAgentEvent(run, "lifecycle", {

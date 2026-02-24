@@ -82,6 +82,7 @@ export interface ResolvedModel {
   providerName: string;
   modelId: string;
   displayName: string;
+  modelEntry?: ModelEntry;
 }
 
 export function parseModelRef(ref: string): { providerName: string; modelId: string } {
@@ -204,5 +205,6 @@ export function resolveModel(
     providerName,
     modelId: modelId || provider.models[0]?.id || "",
     displayName,
+    modelEntry,
   };
 }

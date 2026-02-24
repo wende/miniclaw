@@ -11,6 +11,7 @@ export interface OpenAICompatConfig {
   apiKey?: string;
   model: string;
   systemPrompt?: string;
+  reasoning?: boolean;
 }
 
 // ── Message Types ───────────────────────────────────────────────────────────

@@ -136,6 +136,7 @@ async function setupProvider() {
       apiKey: resolved.provider.apiKey,
       model: resolved.modelId,
       systemPrompt: openclawConfig?.agents?.defaults?.systemPrompt,
+      reasoning: resolved.modelEntry?.reasoning,
     },
     mcpManager
   );

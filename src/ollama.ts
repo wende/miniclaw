@@ -20,101 +20,6 @@ const DEFAULT_CONFIG: OllamaConfig = {
   model: "qwen3:4b",
 };
 
-// ── Tool Definitions ────────────────────────────────────────────────────────
-
-export const MOCK_TOOLS: OllamaTool[] = [
-  {
-    type: "function",
-    function: {
-      name: "web_search",
-      description: "Search the web for information",
-      parameters: {
-        type: "object",
-        properties: {
-          query: { type: "string", description: "The search query" },
-        },
-        required: ["query"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "read_file",
-      description: "Read the contents of a file",
-      parameters: {
-        type: "object",
-        properties: {
-          path: { type: "string", description: "Path to the file" },
-        },
-        required: ["path"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "execute_command",
-      description: "Execute a shell command",
-      parameters: {
-        type: "object",
-        properties: {
-          command: { type: "string", description: "The command to execute" },
-        },
-        required: ["command"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "echo",
-      description: "Echo back the provided text. Useful for testing or repeating information verbatim.",
-      parameters: {
-        type: "object",
-        properties: {
-          text: { type: "string", description: "The text to echo back" },
-        },
-        required: ["text"],
-      },
-    },
-  },
-];
-
-// ── Mock Tool Implementations ───────────────────────────────────────────────
-
-export function executeMockTool(name: string, args: Record<string, unknown>): string {
-  switch (name) {
-    case "web_search":
-      return JSON.stringify({
-        results: [
-          {
-            title: `Search results for "${args["query"]}"`,
-            snippet: `Here are some relevant findings about "${args["query"]}". Multiple sources confirm this is a popular topic with extensive documentation available.`,
-            url: `https://example.com/search?q=${encodeURIComponent(String(args["query"]))}`,
-          },
-          {
-            title: `${args["query"]} - Wikipedia`,
-            snippet: `A comprehensive overview of ${args["query"]}, covering key concepts and recent developments.`,
-            url: `https://en.wikipedia.org/wiki/${encodeURIComponent(String(args["query"]))}`,
-          },
-        ],
-      });
-
-    case "read_file":
-      return `// Contents of ${args["path"]}\nexport const config = {\n  debug: false,\n  port: 3000,\n};\n`;
-
-    case "execute_command":
-      return `$ ${args["command"]}\nCommand executed successfully.\nExit code: 0`;
-
-    case "echo":
-      return String(args["text"] ?? "");
-
-    default:
-      return JSON.stringify({ error: `Unknown tool: ${name}` });
-  }
-}
-
 // ── Ollama Chat API ─────────────────────────────────────────────────────────
 
 interface OllamaMessage {
@@ -247,11 +152,7 @@ export function createOllamaHandler(
 ) {
   const cfg: OllamaConfig = { ...DEFAULT_CONFIG, ...config };
 
-  // Build tool list: MCP tools (if any) + built-in mock tools
-  const allTools: OllamaTool[] = [
-    ...(mcpManager ? mcpManager.getOllamaTools() : []),
-    ...MOCK_TOOLS,
-  ];
+  const allTools: OllamaTool[] = mcpManager ? mcpManager.getOllamaTools() : [];
 
   return async (run: Run, _ws: ServerWebSocket<unknown> | null) => {
     const signal = run.abortController.signal;
@@ -364,7 +265,7 @@ export function createOllamaHandler(
             args,
           });
 
-          // Execute tool: MCP if namespaced, otherwise mock
+          // Execute tool via MCP
           let result: string;
           let isError = false;
 
@@ -373,7 +274,8 @@ export function createOllamaHandler(
             result = mcpResult.result;
             isError = mcpResult.isError;
           } else {
-            result = executeMockTool(name, args);
+            result = JSON.stringify({ error: `Unknown tool: ${name}` });
+            isError = true;
           }
 
           // Emit tool result

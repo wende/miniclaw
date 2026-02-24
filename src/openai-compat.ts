@@ -2,7 +2,7 @@ import type { ServerWebSocket } from "bun";
 import type { MiniClawServer, Run, HistoryEntry } from "./server.ts";
 import type { ContentPart } from "./types.ts";
 import type { McpClientManager, OllamaTool } from "./mcp-client.ts";
-import { MOCK_TOOLS, executeMockTool, DEFAULT_SYSTEM_PROMPT } from "./ollama.ts";
+import { DEFAULT_SYSTEM_PROMPT } from "./ollama.ts";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -207,11 +207,7 @@ export function createOpenAICompatHandler(
   config: OpenAICompatConfig,
   mcpManager?: McpClientManager
 ) {
-  // Build tool list: MCP tools (if any) + built-in mock tools
-  const allTools: OllamaTool[] = [
-    ...(mcpManager ? mcpManager.getOllamaTools() : []),
-    ...MOCK_TOOLS,
-  ];
+  const allTools: OllamaTool[] = mcpManager ? mcpManager.getOllamaTools() : [];
 
   return async (run: Run, _ws: ServerWebSocket<unknown> | null) => {
     const signal = run.abortController.signal;
@@ -330,7 +326,7 @@ export function createOpenAICompatHandler(
             args,
           });
 
-          // Execute tool: MCP if namespaced, otherwise mock
+          // Execute tool via MCP
           let result: string;
           let isError = false;
 
@@ -339,7 +335,8 @@ export function createOpenAICompatHandler(
             result = mcpResult.result;
             isError = mcpResult.isError;
           } else {
-            result = executeMockTool(name, args);
+            result = JSON.stringify({ error: `Unknown tool: ${name}` });
+            isError = true;
           }
 
           // Emit tool result

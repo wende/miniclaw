@@ -1063,6 +1063,11 @@ export class MiniClawServer {
         },
       };
       ws.send(JSON.stringify(event));
+      this.appendHistory(p.sessionKey, {
+        role: "assistant",
+        content: [{ type: "text", text: this.config.greeting }],
+        timestamp: Date.now(),
+      });
     }
   }
 

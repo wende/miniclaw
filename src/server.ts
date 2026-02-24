@@ -47,6 +47,7 @@ interface ConnectionData {
   role?: Role;
   scopes?: string[];
   caps?: string[];
+  sessionKey?: string;
 }
 
 // ── Run State ────────────────────────────────────────────────────────────────
@@ -798,6 +799,15 @@ export class MiniClawServer {
       this.removePresence(ws.data.connId);
       this.broadcastPresence();
     }
+
+    // Clean up session data so memory doesn't grow unboundedly.
+    // Each connection gets a unique session key (rewritten by the proxy),
+    // so this is safe — the session is never shared across connections.
+    if (ws.data.sessionKey) {
+      this.chatHistory.delete(ws.data.sessionKey);
+      this.greetedSessions.delete(ws.data.sessionKey);
+      this.sessionMeta.delete(ws.data.sessionKey);
+    }
   }
 
   // ── Handshake (§2.3) ─────────────────────────────────────────────────────
@@ -963,6 +973,9 @@ export class MiniClawServer {
       );
       return;
     }
+
+    // Track session key for cleanup on connection close
+    ws.data.sessionKey = p.sessionKey;
 
     // Idempotency check (§2.8)
     if (this.isDuplicateKey(p.idempotencyKey)) {

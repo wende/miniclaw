@@ -76,8 +76,9 @@ describe("MCP Server — chat tool", () => {
 
     const content = result.content as Array<{ type: string; text?: string }>;
     expect(content.length).toBeGreaterThan(0);
-    expect(content[0].type).toBe("text");
-    expect(content[0].text!.length).toBeGreaterThan(0);
+    const firstContent = content[0]!;
+    expect(firstContent.type).toBe("text");
+    expect(firstContent.text!.length).toBeGreaterThan(0);
     expect(result.isError).toBeFalsy();
 
     await client.close();
@@ -94,7 +95,8 @@ describe("MCP Server — chat tool", () => {
 
     expect(result.isError).toBe(true);
     const content = result.content as Array<{ type: string; text?: string }>;
-    expect(content[0].text).toContain("message is required");
+    const firstContent = content[0]!;
+    expect(firstContent.text).toContain("message is required");
 
     await client.close();
   });
@@ -110,8 +112,9 @@ describe("MCP Server — chat tool", () => {
 
     const history = srv.getChatHistory("custom-session");
     expect(history.length).toBe(2); // user + assistant
-    expect(history[0].role).toBe("user");
-    expect(history[0].content[0].text).toBe("Hello custom");
+    const firstHistoryItem = history[0]!;
+    expect(firstHistoryItem.role).toBe("user");
+    expect(firstHistoryItem.content[0]!.text).toBe("Hello custom");
 
     await client.close();
   });
@@ -136,8 +139,9 @@ describe("MCP Server — clear_session tool", () => {
     });
 
     const content = result.content as Array<{ type: string; text?: string }>;
-    expect(content[0].text).toContain("clear-test");
-    expect(content[0].text).toContain("cleared");
+    const firstContent = content[0]!;
+    expect(firstContent.text).toContain("clear-test");
+    expect(firstContent.text).toContain("cleared");
     expect(srv.getChatHistory("clear-test").length).toBe(0);
 
     await client.close();
@@ -161,7 +165,8 @@ describe("MCP Server — clear_session tool", () => {
     });
 
     const content = result.content as Array<{ type: string; text?: string }>;
-    expect(content[0].text).toContain("main");
+    const firstContent = content[0]!;
+    expect(firstContent.text).toContain("main");
     expect(srv.getChatHistory("main").length).toBe(0);
 
     await client.close();
@@ -179,10 +184,11 @@ describe("MCP Server — list_models tool", () => {
     });
 
     const content = result.content as Array<{ type: string; text?: string }>;
-    expect(content[0].text).toContain("Model:");
-    expect(content[0].text).toContain("Provider:");
-    expect(content[0].text).toContain(srv.currentModel);
-    expect(content[0].text).toContain(srv.currentProvider);
+    const firstContent = content[0]!;
+    expect(firstContent.text).toContain("Model:");
+    expect(firstContent.text).toContain("Provider:");
+    expect(firstContent.text).toContain(srv.currentModel);
+    expect(firstContent.text).toContain(srv.currentProvider);
 
     await client.close();
   });
@@ -200,8 +206,9 @@ describe("MCP Server — unknown tool", () => {
 
     expect(result.isError).toBe(true);
     const content = result.content as Array<{ type: string; text?: string }>;
-    expect(content[0].text).toContain("Unknown tool");
-    expect(content[0].text).toContain("nonexistent_tool");
+    const firstContent = content[0]!;
+    expect(firstContent.text).toContain("Unknown tool");
+    expect(firstContent.text).toContain("nonexistent_tool");
 
     await client.close();
   });

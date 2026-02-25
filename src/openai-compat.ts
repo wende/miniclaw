@@ -336,7 +336,7 @@ export function createOpenAICompatHandler(
 
           // Execute tool via MCP
           let result: string;
-          let isError = false;
+          let isError: boolean;
 
           if (mcpManager && mcpManager.isNamespacedTool(name)) {
             const mcpResult = await mcpManager.callTool(name, args);

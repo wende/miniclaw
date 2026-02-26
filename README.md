@@ -189,6 +189,46 @@ bun run lint
 bun run test:coverage
 ```
 
+## E2E (MobileClaw + MiniClaw)
+
+This repo includes a Playwright smoke test that:
+- launches MiniClaw (demo mode) on `ws://127.0.0.1:18080`
+- launches MobileClaw
+- opens MobileClaw in detached mode with `?detached=1&url=...`
+- sends a message
+- waits for the assistant response
+
+Prereqs:
+
+```bash
+# miniclaw deps
+bun install
+```
+
+By default, the e2e harness will clone `wende/mobileclaw` into
+`/Users/wende/projects/mobileclaw` if missing, then run `pnpm install`.
+
+Run:
+
+```bash
+# Install browser once
+bunx playwright install chromium
+
+# From miniclaw repo
+bun run test:e2e
+```
+
+Optional overrides:
+- `MOBILECLAW_START_CMD` (default: `pnpm dev --port 3000`)
+- `MINICLAW_START_CMD` (default: `bun run index.ts --config e2e/openclaw.e2e.json`)
+- `MOBILECLAW_BASE_URL` (default: `http://127.0.0.1:3000`)
+- `MOBILECLAW_REUSE_EXISTING` (default: `1`; set to `0` to force a fresh launch)
+- `MOBILECLAW_GIT_URL` (default: `https://github.com/wende/mobileclaw.git`)
+- `MOBILECLAW_GIT_REF` (optional branch/tag to clone/checkout)
+- `MOBILECLAW_INSTALL_CMD` (default: `pnpm install`)
+- `MOBILECLAW_AUTO_PULL` (default: `0`; set to `1` to `git pull --ff-only` on existing checkout)
+- `MOBILECLAW_PORT` / `MINICLAW_PORT`
+
 ## Project Structure
 
 ```
@@ -197,6 +237,7 @@ mcp-server.ts         # MCP stdio entrypoint (WebSocket + MCP server)
 openclaw.json.example # Provider config template
 mcp.json              # MCP client tool server config
 protocol-spec.md      # OpenClaw Gateway Protocol v3 specification
+e2e/                 # Playwright e2e smoke test + e2e config
 src/
   server.ts           # Core WebSocket server, RPC routing, session/run management
   server.test.ts      # Tests (137 tests covering all protocol methods)

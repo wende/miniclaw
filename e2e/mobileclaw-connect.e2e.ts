@@ -7,7 +7,11 @@ import { resolve } from "node:path";
 
 const MINICLAW_PORT = Number(process.env["MINICLAW_PORT"] ?? "18080");
 const MOBILECLAW_PORT = Number(process.env["MOBILECLAW_PORT"] ?? "3000");
-const MOBILECLAW_DIR = process.env["MOBILECLAW_DIR"] ?? resolve(process.env["HOME"] ?? "/Users/wende", "projects/mobileclaw");
+const MOBILECLAW_DIR =
+  process.env["MOBILECLAW_DIR"] ??
+  (process.env["HOME"]
+    ? resolve(process.env["HOME"], "projects/mobileclaw")
+    : resolve(process.cwd(), "../mobileclaw"));
 const MINICLAW_START_CMD = process.env["MINICLAW_START_CMD"] ?? "bun run index.ts --config e2e/openclaw.e2e.json";
 const MOBILECLAW_START_CMD = process.env["MOBILECLAW_START_CMD"] ?? `pnpm dev --port ${MOBILECLAW_PORT}`;
 const MOBILECLAW_BASE_URL = process.env["MOBILECLAW_BASE_URL"] ?? `http://127.0.0.1:${MOBILECLAW_PORT}`;

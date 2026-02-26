@@ -1,0 +1,6 @@
+{
+  "gateway": {
+    "port": 18080,
+    "bind": "loopback"
+  }
+}
